@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   Hubs.find(req.query)  
       .then(posts => res.json(posts))
       .catch(error => {
-          res.json(500).json({
+          res.status(500).json({
             error: "The posts information could not be retrieved.", 
           })
       })
@@ -44,10 +44,10 @@ router.post('/', (req, res) => {
     })
   }
   Hubs.insert({ title, contents })
-      .then(res => Hubs.findById(res.id))
+      // .then(res => Hubs.findById(res.id))
       .then(post => res.status(201).json(post))
       .catch(error => {
-        res.json(500).json({
+        res.status(500).json({
           error: "There was an error while saving the post to the database", 
         })
       })
@@ -68,7 +68,7 @@ router.delete('/:id', (req, res) => {
         }
       })
       .catch(error => {
-        res.json(500).json({
+        res.status(500).json({
           error: "The post could not be removed", 
         })
       })
@@ -92,7 +92,7 @@ router.put('/:id', (req, res) => {
         }
       })
       .catch(error => {
-        res.json(500).json({
+        res.status(500).json({
           error: "The post information could not be modified.", 
         })
       })
@@ -101,7 +101,13 @@ router.put('/:id', (req, res) => {
 router.get('/:id/comments', (req, res) => {
   Hubs.findPostComments(req.params.id) 
       .then(comments => {
-        res.json(comments)
+        if(comments) {
+          res.json(comments)
+        } else {
+            res.status(404).json({ 
+              message: "The post with the specified ID doen not exist.",
+            })
+        }
       })
       .catch (error => {
         res.json(500).json({
@@ -109,3 +115,47 @@ router.get('/:id/comments', (req, res) => {
         })
       })
 })
+
+router.get('/:id/comments/:commentsId', (req, res) => {
+  Hubs.findCommentById(req.params.commentsId)
+      .then(comments => {
+        if(comments) {
+          res.json(comments)
+        } else {
+            res.status(404).json({
+              message: "The post with the specified ID doen not exist.",
+            })
+        }
+      }) 
+      .catch(error => {
+        res.status(500).json({
+          error: "The comments information could not be retrieved.", 
+        })
+      })
+})
+
+router.post('/:id/comments', (req, res) => {
+    if(!req.body.text) {
+      return res.status(400).json({
+        message: "Please provide text for the comments.", 
+      })
+    }
+    const newComments = { ...req.body, post_id: req.params.id };
+    Hubs.insertComment(newComments)
+        .then(comments => {
+          if(comments) {
+            res.status(201).json(comments)
+          } else {
+              res.status(404).json({
+                message: "The post with the specified ID doen not exist.",
+              })
+          }
+        })
+        .catch(error => {
+          res.json(500).json({
+            error: "There was an error while saving the comment to the database", 
+          })
+        })
+  })
+  
+module.exports = router
