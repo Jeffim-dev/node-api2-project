@@ -1,0 +1,33 @@
+router.post('/:id/comments', (req, res) => {
+  const validation = validateComment((req.body));
+
+  if (validation.success) {
+    Posts.findById(req.params.id)
+         .then(([post]) => {
+           if (post) {
+             Posts.insertComment({ ...req.bod, post_id: req.params.id })
+                  .then(({ id }) => {
+                    Posts.findCommentById(id).then(([comment]) => {
+                      res.status(201).json(comment);
+                    })
+                  })
+                  .catch(error => {
+                    res.status(500).json({
+                     error: "We ran into an error getting the newly created comment."
+                    })
+                  })
+           } else {
+             res.status(400).json({
+               message: "The post with the specified ID doen not exist.",
+             })
+           }
+         })
+         .catch(error => {
+            res.json(500).json({
+              error: "There was an error while saving the comment to the database", 
+            })
+          })
+  } else {
+      res.status(400).json({ erroe: validation.error })
+  }
+})
